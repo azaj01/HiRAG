@@ -21,7 +21,9 @@ from ._llm import (
     deepseek_embedding,
     deepseek_complete,
     ollama_embedding,
-    ollama_complete
+    ollama_complete,
+    cohere_embedding,
+    cohere_complete
 )
 from ._op import (
     chunking_by_token_size,
