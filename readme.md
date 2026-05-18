@@ -16,6 +16,7 @@
 
 - This is the repo for the paper [HiRAG: Retrieval-Augmented Generation with Hierarchical Knowledge](https://arxiv.org/abs/2503.10150).
 - **Accepted to [EMNLP 2025](https://2025.emnlp.org/) Findings!🎉**
+- Want to refine your knowledge base at test time? See our new work **[DeepRefine](https://github.com/HKUST-KnowComp/DeepRefine)**!
 
 ## Model Pipeline
 
