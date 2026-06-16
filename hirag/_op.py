@@ -42,7 +42,7 @@ def timer():
     finally:
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
-        logging.info(f"[Retrieval Time: {elapsed_time:.6f} seconds]")
+        logging.info(f"\033[94m[Retrieval Time: {elapsed_time:.6f} seconds]\033[0m")
 
 
 def chunking_by_token_size(
@@ -310,8 +310,6 @@ async def _merge_edges_then_upsert(
         ),
     )
 
-# TODO:
-# extract entities with normal and attribute entities
 async def extract_hierarchical_entities(
     chunks: dict[str, TextChunkSchema],
     knowledge_graph_inst: BaseGraphStorage,
@@ -357,21 +355,28 @@ async def extract_hierarchical_entities(
         hint_prompt = entity_extract_prompt.format(**context_base_entity, input_text=content)      # fill in the parameter
         final_result = await use_llm_func(hint_prompt)                                      # feed into LLM with the prompt
 
+        # check if need gleaning
         history = pack_user_ass_to_openai_messages(hint_prompt, final_result)               # set as history
-        for now_glean_index in range(entity_extract_max_gleaning):
-            glean_result = await use_llm_func(continue_prompt, history_messages=history)
-
-            history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)      # add to history
-            final_result += glean_result
-            if now_glean_index == entity_extract_max_gleaning - 1:
-                break
-
-            if_loop_result: str = await use_llm_func(                                       # judge if we still need the next iteration
-                if_loop_prompt, history_messages=history
-            )
-            if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
-            if if_loop_result != "yes":
-                break
+        if_loop_result: str = await use_llm_func(
+            if_loop_prompt, history_messages=history
+        )
+        if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
+        if if_loop_result == "yes":
+            logger.info(f"\033[91m[Found Missed Entities, Gleaning {entity_extract_max_gleaning} times]\033[0m")
+            for now_glean_index in range(entity_extract_max_gleaning):
+                glean_result = await use_llm_func(continue_prompt, history_messages=history)
+                history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)      # add to history
+                final_result += glean_result
+                if now_glean_index == entity_extract_max_gleaning - 1:
+                    break
+                if_loop_result: str = await use_llm_func(                                       # judge if we still need the next iteration
+                    if_loop_prompt, history_messages=history
+                )
+                if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
+                if if_loop_result != "yes":
+                    break
+        else:
+            logger.info(f"\033[92m[No Missed Entities]\033[0m")
 
         records = split_string_by_multi_markers(                                            # split entities from result --> list of entities
             final_result,
@@ -464,21 +469,30 @@ async def extract_hierarchical_entities(
         hint_prompt = relation_extract_prompt.format(**context_base_relation, input_text=content)      # fill in the parameter
         final_result = await use_llm_func(hint_prompt)                                      # feed into LLM with the prompt
 
+        # check if need gleaning
         history = pack_user_ass_to_openai_messages(hint_prompt, final_result)               # set as history
-        for now_glean_index in range(entity_extract_max_gleaning):
-            glean_result = await use_llm_func(continue_prompt, history_messages=history)
+        if_loop_result: str = await use_llm_func(                                       # judge if we still need the next iteration
+            if_loop_prompt, history_messages=history
+        )
+        if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
+        if if_loop_result == "yes":
+            logger.info(f"\033[91m[Found Missed Relations, Gleaning {entity_extract_max_gleaning} times]\033[0m")
+            for now_glean_index in range(entity_extract_max_gleaning):
+                glean_result = await use_llm_func(continue_prompt, history_messages=history)
 
-            history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)      # add to history
-            final_result += glean_result
-            if now_glean_index == entity_extract_max_gleaning - 1:
-                break
+                history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)      # add to history
+                final_result += glean_result
+                if now_glean_index == entity_extract_max_gleaning - 1:
+                    break
 
-            if_loop_result: str = await use_llm_func(                                       # judge if we still need the next iteration
-                if_loop_prompt, history_messages=history
-            )
-            if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
-            if if_loop_result != "yes":
-                break
+                if_loop_result: str = await use_llm_func(                                       # judge if we still need the next iteration
+                    if_loop_prompt, history_messages=history
+                )
+                if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
+                if if_loop_result != "yes":
+                    break
+        else:
+            logger.info(f"\033[92m[No Missed Relations]\033[0m")
 
         records = split_string_by_multi_markers(                                            # split entities from result --> list of entities
             final_result,
@@ -536,7 +550,7 @@ async def extract_hierarchical_entities(
             all_relations[k] = v
     
     # TODO: hierarchical clustering
-    logger.info(f"[Hierarchical Clustering]")
+    logger.info(f"\033[94m[Hierarchical Clustering]\033[0m")
     hierarchical_cluster = Hierarchical_Clustering()
     hierarchical_clustered_entities_relations = await hierarchical_cluster.perform_clustering(entity_vdb=entity_vdb, global_config=global_config, entities=all_entities)
     hierarchical_clustered_entities = [[x for x in y if "entity_name" in x.keys()] for y in hierarchical_clustered_entities_relations]
@@ -620,21 +634,28 @@ async def extract_entities(
         hint_prompt = entity_extract_prompt.format(**context_base, input_text=content)      # fill in the parameter
         final_result = await use_llm_func(hint_prompt)                                      # feed into LLM with the prompt
 
+        # check if need gleaning
         history = pack_user_ass_to_openai_messages(hint_prompt, final_result)               # set as history
-        for now_glean_index in range(entity_extract_max_gleaning):
-            glean_result = await use_llm_func(continue_prompt, history_messages=history)
-
-            history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)      # add to history
-            final_result += glean_result
-            if now_glean_index == entity_extract_max_gleaning - 1:
-                break
-
-            if_loop_result: str = await use_llm_func(                                       # judge if we still need the next iteration
-                if_loop_prompt, history_messages=history
-            )
-            if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
-            if if_loop_result != "yes":
-                break
+        if_loop_result: str = await use_llm_func(
+            if_loop_prompt, history_messages=history
+        )
+        if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
+        if if_loop_result == "yes":
+            logger.info(f"\033[91m[Found Missed Entities, Gleaning {entity_extract_max_gleaning} times]\033[0m")
+            for now_glean_index in range(entity_extract_max_gleaning):
+                glean_result = await use_llm_func(continue_prompt, history_messages=history)
+                history += pack_user_ass_to_openai_messages(continue_prompt, glean_result)      # add to history
+                final_result += glean_result
+                if now_glean_index == entity_extract_max_gleaning - 1:
+                    break
+                if_loop_result: str = await use_llm_func(                                       # judge if we still need the next iteration
+                    if_loop_prompt, history_messages=history
+                )
+                if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
+                if if_loop_result != "yes":
+                    break
+        else:
+            logger.info(f"\033[92m[No Missed Entities]\033[0m")
 
         records = split_string_by_multi_markers(                                            # split entities from result --> list of entities
             final_result,
@@ -1122,9 +1143,10 @@ async def _find_most_related_edges_from_paths(
     # all_reasoning_path = await asyncio.gather(
     #                         *[knowledge_graph_inst.get_edge(e[0], e[1]) for e in knowledge_graph_inst._graph.subgraph(path).edges()]
     #                     )
-    all_reasoning_path = knowledge_graph_inst._graph.subgraph(path).edges()
+    all_reasoning_path = await knowledge_graph_inst.subgraph_edges(path)
     all_edges = set()
-    all_edges.update([tuple(sorted(e)) for e in all_reasoning_path])
+    print(all_reasoning_path)
+    all_edges.update([tuple(sorted(e[:2])) for e in all_reasoning_path])
     all_edges = list(all_edges)
     all_edges_pack = await asyncio.gather(
         *[knowledge_graph_inst.get_edge(e[0], e[1]) for e in all_edges]
@@ -1281,36 +1303,56 @@ async def _build_hierarchical_query_context(
     #     node_datas, query_param, knowledge_graph_inst
     # )
 
-    def find_path_with_required_nodes(graph, source, target, required_nodes):
+    async def find_path_with_required_nodes(knowledge_graph_inst, source, target, required_nodes):
         # inital final path
         final_path = []
-        # 起点设置为当前节点
+        # start node
         current_node = source
 
-        # 遍历必经节点
+        # all gdb cls
+        from ._storage.gdb_neo4j import Neo4jStorage
+        from ._storage.gdb_networkx import NetworkXStorage
+        
+        # traverse the required nodes
         for next_node in required_nodes:
             # 找到从当前节点到下一个必经节点的最短路径
             try:
-                sub_path = nx.shortest_path(graph, source=current_node, target=next_node)
+                if isinstance(knowledge_graph_inst, Neo4jStorage):
+                    # use Neo4j's shortest_path method
+                    sub_path = await knowledge_graph_inst.shortest_path(current_node, next_node)
+                elif isinstance(knowledge_graph_inst, NetworkXStorage):
+                    # use NetworkX's shortest_path method
+                    sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=next_node)
+                else:
+                    # use NetworkX by default
+                    sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=next_node)
             except nx.NetworkXNoPath:
                 # raise ValueError(f"No path between {current_node} and {next_node}.")
                 final_path.extend([next_node])
                 current_node = next_node
                 continue
             
-            # 合并路径（避免重复添加当前节点）
+            # merge paths (avoid adding the current node again)
             if final_path:
-                final_path.extend(sub_path[1:])  # 从第二个节点开始添加，避免重复
+                final_path.extend(sub_path[1:])  # add from the second node, avoid adding the current node again
             else:
                 final_path.extend(sub_path)
             
-            # 更新当前节点为下一个必经节点
+            # update the current node to the next required node
             current_node = next_node
 
-        # 最后，从最后一个必经节点到目标节点的路径
+        # finally, the path from the last required node to the target node
         try:
-            sub_path = nx.shortest_path(graph, source=current_node, target=target)
-            final_path.extend(sub_path[1:])  # 从第二个节点开始添加，避免重复
+            if isinstance(knowledge_graph_inst, Neo4jStorage):
+                # use Neo4j's shortest_path method
+                sub_path = await knowledge_graph_inst.shortest_path(current_node, target)
+            elif isinstance(knowledge_graph_inst, NetworkXStorage):
+                # use NetworkX's shortest_path method
+                sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=target)
+            else:
+                # use NetworkX by default
+                sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=target)
+            final_path.extend(sub_path[1:])  # add from the second node, avoid adding the current node again
         except nx.NetworkXNoPath:
             # raise ValueError(f"No path between {current_node} and {target}.")
             final_path.extend([target])
@@ -1336,7 +1378,7 @@ async def _build_hierarchical_query_context(
     key_entities = list(set([k for kk in key_entities for k in kk]))
     # find the shortest path between the key entities
     try:
-        path = find_path_with_required_nodes(knowledge_graph_inst._graph, key_entities[0], key_entities[-1], key_entities[1:-1])
+        path = await find_path_with_required_nodes(knowledge_graph_inst, key_entities[0], key_entities[-1], key_entities[1:-1])
         # path = list(set(path))
         path_datas = await asyncio.gather(      # get full information of retrieved entities
             *[knowledge_graph_inst.get_node(r) for r in path]
@@ -1481,36 +1523,43 @@ async def _build_hibridge_query_context(
     #     node_datas, query_param, knowledge_graph_inst
     # )
 
-    def find_path_with_required_nodes(graph, source, target, required_nodes):
+    async def find_path_with_required_nodes(knowledge_graph_inst, source, target, required_nodes):
         # inital final path
         final_path = []
-        # 起点设置为当前节点
         current_node = source
 
-        # 遍历必经节点
+        from ._storage.gdb_neo4j import Neo4jStorage
+        from ._storage.gdb_networkx import NetworkXStorage
+        
         for next_node in required_nodes:
-            # 找到从当前节点到下一个必经节点的最短路径
             try:
-                sub_path = nx.shortest_path(graph, source=current_node, target=next_node)
+                if isinstance(knowledge_graph_inst, Neo4jStorage):
+                    sub_path = await knowledge_graph_inst.shortest_path(current_node, next_node)
+                elif isinstance(knowledge_graph_inst, NetworkXStorage):
+                    sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=next_node)
+                else:
+                    sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=next_node)
             except nx.NetworkXNoPath:
                 # raise ValueError(f"No path between {current_node} and {next_node}.")
                 final_path.extend([next_node])
                 current_node = next_node
                 continue
             
-            # 合并路径（避免重复添加当前节点）
             if final_path:
-                final_path.extend(sub_path[1:])  # 从第二个节点开始添加，避免重复
+                final_path.extend(sub_path[1:])
             else:
                 final_path.extend(sub_path)
             
-            # 更新当前节点为下一个必经节点
             current_node = next_node
 
-        # 最后，从最后一个必经节点到目标节点的路径
         try:
-            sub_path = nx.shortest_path(graph, source=current_node, target=target)
-            final_path.extend(sub_path[1:])  # 从第二个节点开始添加，避免重复
+            if isinstance(knowledge_graph_inst, Neo4jStorage):
+                sub_path = await knowledge_graph_inst.shortest_path(current_node, target)
+            elif isinstance(knowledge_graph_inst, NetworkXStorage):
+                sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=target)
+            else:
+                sub_path = nx.shortest_path(knowledge_graph_inst._graph, source=current_node, target=target)
+            final_path.extend(sub_path[1:])
         except nx.NetworkXNoPath:
             # raise ValueError(f"No path between {current_node} and {target}.")
             final_path.extend([target])
@@ -1536,7 +1585,7 @@ async def _build_hibridge_query_context(
     key_entities = list(set([k for kk in key_entities for k in kk]))
     # find the shortest path between the key entities
     try:
-        path = find_path_with_required_nodes(knowledge_graph_inst._graph, key_entities[0], key_entities[-1], key_entities[1:-1])
+        path = await find_path_with_required_nodes(knowledge_graph_inst, key_entities[0], key_entities[-1], key_entities[1:-1])
         # path = list(set(path))
         path_datas = await asyncio.gather(      # get full information of retrieved entities
             *[knowledge_graph_inst.get_node(r) for r in path]

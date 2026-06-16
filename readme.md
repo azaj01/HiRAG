@@ -1,5 +1,22 @@
-# Retrieval-Augmented Generation with Hierarchical Knowledge (HiRAG)
-This is the repo for the paper [Retrieval-Augmented Generation with Hierarchical Knowledge](https://arxiv.org/abs/2503.10150).
+<div align="center">
+
+# 🤗 HiRAG: Retrieval-Augmented Generation with Hierarchical Knowledge
+
+<p align="center">
+    <img src="./imgs/icon2.png" width="20%" style="max-width: 80;">
+</p>
+
+[<img align="center" src="https://img.shields.io/badge/arXiv-2503.10150 HiRAG -b31b1b" />](https://arxiv.org/abs/2503.10150)
+[<img align="center" src="https://img.shields.io/badge/Dataset-TommyChien/UltraDomain -yellow" />](https://huggingface.co/datasets/TommyChien/UltraDomain)
+[<img align="center" src="https://deepwiki.com/badge.svg" />](https://deepwiki.com/hhy-huang/HiRAG)
+
+</div>
+
+
+
+- This is the repo for the paper [HiRAG: Retrieval-Augmented Generation with Hierarchical Knowledge](https://arxiv.org/abs/2503.10150).
+- **Accepted to [EMNLP 2025](https://2025.emnlp.org/) Findings!🎉**
+- Re-indexing the knowledge base is too costly🤯? Want to refine your knowledge base at test time? See our new work **[DeepRefine](https://github.com/HKUST-KnowComp/DeepRefine)**!
 
 ## Model Pipeline
 
@@ -249,15 +266,15 @@ We gratefully acknowledge the use of the following open-source projects in our w
 
 - [RAPTOR](https://github.com/parthsarthi03/raptor): a novel approach to retrieval-augmented language models by constructing a recursive tree structure from documents.
 
-## Cite Us
-```
-@misc{huang2025retrievalaugmentedgenerationhierarchicalknowledge,
-      title={Retrieval-Augmented Generation with Hierarchical Knowledge}, 
-      author={Haoyu Huang and Yongfeng Huang and Junjie Yang and Zhenyu Pan and Yongqiang Chen and Kaili Ma and Hongzhi Chen and James Cheng},
-      year={2025},
-      eprint={2503.10150},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2503.10150}, 
+## 💡 Cite Us
+```python
+@article{huang2025retrieval,
+  title={Retrieval-Augmented Generation with Hierarchical Knowledge},
+  author={Huang, Haoyu and Huang, Yongfeng and Yang, Junjie and Pan, Zhenyu and Chen, Yongqiang and Ma, Kaili and Chen, Hongzhi and Cheng, James},
+  journal={arXiv preprint arXiv:2503.10150},
+  year={2025}
 }
 ```
+## 🌟 Star History
+
+![Star History Chart](https://api.star-history.com/svg?repos=hhy-huang/HiRAG&type=Date)
